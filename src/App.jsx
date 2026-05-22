@@ -56,40 +56,34 @@ export default function App() {
     return <Setup onComplete={() => setSettings(getSettings())} />
   }
 
+  function handleSettings() {
+    if (confirm('設定を変更しますか？APIキーの再入力が必要です。')) {
+      saveSettings({ ...getSettings(), apiKey: '' })
+      setSettings(getSettings())
+    }
+  }
+
+  const navItems = [
+    { id: 'dashboard', label: 'ホーム', icon: '⌂' },
+    { id: 'history',   label: 'ログ',   icon: '≡' },
+    { id: 'trends',    label: '傾向',   icon: '∿' },
+  ]
+
   return (
     <div className="app">
       <header className="header">
         <span className="header-title">📓 意思決定ログ</span>
         <nav className="header-nav">
-          <button
-            className={`nav-btn ${view === 'dashboard' ? 'active' : ''}`}
-            onClick={() => { setView('dashboard'); setDialogueActive(false) }}
-          >
-            ホーム
-          </button>
-          <button
-            className={`nav-btn ${view === 'history' ? 'active' : ''}`}
-            onClick={() => { setView('history'); setDialogueActive(false) }}
-          >
-            ログ
-          </button>
-          <button
-            className={`nav-btn ${view === 'trends' ? 'active' : ''}`}
-            onClick={() => { setView('trends'); setDialogueActive(false) }}
-          >
-            傾向
-          </button>
-          <button
-            className="nav-btn"
-            onClick={() => {
-              if (confirm('設定を変更しますか？APIキーの再入力が必要です。')) {
-                saveSettings({ ...getSettings(), apiKey: '' })
-                setSettings(getSettings())
-              }
-            }}
-          >
-            設定
-          </button>
+          {navItems.map(item => (
+            <button
+              key={item.id}
+              className={`nav-btn ${view === item.id && !dialogueActive ? 'active' : ''}`}
+              onClick={() => { setView(item.id); setDialogueActive(false) }}
+            >
+              {item.label}
+            </button>
+          ))}
+          <button className="nav-btn" onClick={handleSettings}>設定</button>
         </nav>
       </header>
 
@@ -104,6 +98,23 @@ export default function App() {
           <TrendView />
         )}
       </main>
+
+      <nav className="bottom-nav">
+        {navItems.map(item => (
+          <button
+            key={item.id}
+            className={`bottom-nav-item ${view === item.id && !dialogueActive ? 'active' : ''}`}
+            onClick={() => { setView(item.id); setDialogueActive(false) }}
+          >
+            <span className="bottom-nav-icon">{item.icon}</span>
+            <span>{item.label}</span>
+          </button>
+        ))}
+        <button className="bottom-nav-item" onClick={handleSettings}>
+          <span className="bottom-nav-icon">⚙</span>
+          <span>設定</span>
+        </button>
+      </nav>
 
       {showPopup && !dialogueActive && (
         <PopupNotification onStart={startDialogue} onDismiss={dismissPopup} />
