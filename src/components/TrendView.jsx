@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { getTrends, saveTrends, getSessions, formatDate } from '../services/storage'
+import { getTrends, saveTrends, getSessions, formatDate, getSettings } from '../services/storage'
 import { generateTrends } from '../services/claude'
-import { getSettings } from '../services/storage'
 
 export default function TrendView() {
   const [trends, setTrends] = useState(() => getTrends())
@@ -9,7 +8,7 @@ export default function TrendView() {
   const [error, setError] = useState('')
 
   const sessions = getSessions()
-  const summarizedCount = sessions.filter(s => s.summary).length
+  const summarizedCount = sessions.filter(s => s.summary || s.structured).length
 
   async function handleAnalyze() {
     const { apiKey } = getSettings()
@@ -46,12 +45,21 @@ export default function TrendView() {
         </div>
       )}
 
-      {!trends && (
+      {!trends && summarizedCount === 0 && (
         <div className="card">
           <div className="empty-state">
-            {summarizedCount === 0
-              ? 'まずチェックインを行い、「まとめる」をクリックしてログを作成してください。'
-              : `${summarizedCount}件のまとめがあります。「分析を更新」で傾向を表示できます。`}
+            まずチェックインを行ってログを作成してください。
+          </div>
+        </div>
+      )}
+
+      {!trends && summarizedCount > 0 && (
+        <div className="card">
+          <div className="empty-state">
+            <p style={{ marginBottom: 16 }}>{summarizedCount}件の記録があります。</p>
+            <button className="btn btn-primary" onClick={handleAnalyze} disabled={loading}>
+              {loading ? '分析中…' : '今すぐ傾向を分析する'}
+            </button>
           </div>
         </div>
       )}

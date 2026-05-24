@@ -47,22 +47,22 @@ export default function Dashboard({ onStartDialogue }) {
         </div>
       ) : (
         <div className="card">
-          {sessions.map(s => (
-            <div key={s.id} className="session-item" style={{ cursor: 'default' }}>
-              <div className="session-meta">
-                <span className="session-date">{formatDate(s.startedAt)}</span>
-                {s.summary && <span className="session-badge">まとめあり</span>}
-              </div>
-              <div className="session-title">
-                {s.summary?.overview || 'チェックイン'}
-              </div>
-              {s.summary?.keywords?.length > 0 && (
-                <div className="session-preview">
-                  {s.summary.keywords.join('　・　')}
+          {sessions.map(s => {
+            const overview = s.structured?.overview || s.summary?.overview || 'チェックイン'
+            const keywords = s.structured?.keywords || s.summary?.keywords || []
+            return (
+              <div key={s.id} className="session-item" style={{ cursor: 'default' }}>
+                <div className="session-meta">
+                  <span className="session-date">{formatDate(s.startedAt)}</span>
+                  {(s.structured || s.summary) && <span className="session-badge">整理済み</span>}
                 </div>
-              )}
-            </div>
-          ))}
+                <div className="session-title">{overview}</div>
+                {keywords.length > 0 && (
+                  <div className="session-preview">{keywords.join('　・　')}</div>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

@@ -41,11 +41,14 @@ export function updateSession(id, updates) {
 }
 
 export function getSettings() {
-  return read(KEYS.settings, {
+  const stored = read(KEYS.settings, {
     apiKey: '',
     intervalMinutes: 60,
     lastPopupAt: null,
   })
+  const envKey = import.meta.env.VITE_ANTHROPIC_API_KEY
+  if (envKey) stored.apiKey = envKey
+  return stored
 }
 
 export function saveSettings(settings) {

@@ -27,6 +27,24 @@ const SUMMARY_SYSTEM = `あなたは対話の内容を構造化してまとめ�
   "keywords": ["キーワード1", "キーワード2", "キーワード3"]
 }`
 
+const STRUCTURE_SYSTEM = `あなたは意思決定の記録をサポートするアシスタントです。
+ユーザーが話した内容（音声文字起こしや自由記述）を受け取り、意思決定に関する情報を構造的に整理します。
+必ず以下のJSON形式のみで返してください（マークダウンコードブロックなし、他のテキストは一切含めない）：
+{
+  "overview": "話された内容の要約（1〜2文）",
+  "decisions": [
+    {
+      "title": "意思決定・判断のタイトル（5〜20文字）",
+      "detail": "決定した内容の説明（1〜2文）",
+      "reasoning": "その判断の背景・理由（1〜2文、明示されていない場合は空文字）"
+    }
+  ],
+  "context": "状況・背景の補足（1〜2文、明示されていない場合は空文字）",
+  "keywords": ["キーワード1", "キーワード2", "キーワード3"]
+}
+意思決定が複数ある場合はdecisionsに複数含めてください。
+意思決定だけでなく、気になっていることや考えていることもdecisionsとして整理してください。`
+
 const TRENDS_SYSTEM = `あなたは複数の意思決定ログを分析して傾向を抽出するアシスタントです。
 必ず以下のJSON形式のみで返してください（他のテキストは一切含めない）：
 {
@@ -95,6 +113,20 @@ export async function sendDialogueMessage(messages, apiKey, onChunk) {
   return callAPI(messages, DIALOGUE_SYSTEM, apiKey, onChunk)
 }
 
+export async function structureInput(rawText, apiKey) {
+  const text = await callAPI(
+    [{ role: 'user', content: `以下の内容を構造的に整理してください：\n\n${rawText}` }],
+    STRUCTURE_SYSTEM,
+    apiKey,
+    null
+  )
+  try {
+    return JSON.parse(text.trim())
+  } catch {
+    return { overview: text, decisions: [], context: '', keywords: [] }
+  }
+}
+
 export async function generateSummary(messages, apiKey) {
   const content = messages
     .map(m => `${m.role === 'user' ? 'ユーザー' : 'AI'}: ${m.content}`)
@@ -116,11 +148,16 @@ export async function generateSummary(messages, apiKey) {
 
 export async function generateTrends(sessions, apiKey) {
   const summarized = sessions
-    .filter(s => s.summary)
+    .filter(s => s.structured || s.summary)
     .slice(0, 20)
     .map(s => {
+      const date = new Date(s.startedAt).toLocaleDateString('ja-JP')
+      if (s.structured) {
+        const decs = (s.structured.decisions || []).map(d => `・${d.title}: ${d.detail}`).join('\n')
+        return `[${date}]\n概要: ${s.structured.overview}\n${decs}`
+      }
       const pts = s.summary.points.map(p => `・${p.topic}: ${p.understanding}`).join('\n')
-      return `[${new Date(s.startedAt).toLocaleDateString('ja-JP')}]\n概要: ${s.summary.overview}\n${pts}`
+      return `[${date}]\n概要: ${s.summary.overview}\n${pts}`
     })
     .join('\n\n---\n\n')
 
